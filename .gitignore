@@ -1,0 +1,7 @@
+*.wav
+*.WAV
+*.mp3
+*.flac
+data/
+database/
+DroneAudioDataset-master/
