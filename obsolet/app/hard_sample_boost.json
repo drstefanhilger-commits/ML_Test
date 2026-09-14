@@ -1,0 +1,42 @@
+{
+  "boost_factor_fn": 4,
+  "boost_factor_borderline": 2,
+  "boost_factor_false_sound": 3,
+
+  "fn_samples": [
+    "B_S2_D1_094-bebop_003_.wav",
+    "mixed_25-bebop_001_.wav",
+    "mixed_36-bebop_002_.wav",
+    "mixed_38-bebop_001_.wav",
+    "mixed_46-bebop_003_.wav",
+    "mixed_membo_11-membo_003_.wav",
+    "mixed_membo_24-membo_002_.wav",
+    "mixed_membo_24-membo_004_.wav",
+    "mixed_membo_29-membo_001_.wav",
+    "mixed_membo_29-membo_003_.wav",
+    "mixed_membo_30-membo_004_.wav",
+    "mixed_membo_34-membo_003_.wav",
+    "mixed_membo_39-membo_000_.wav",
+    "mixed_membo_53-membo_000_.wav",
+    "mixed_membo_59-membo_004_.wav",
+    "mixed_membo_61-membo_002_.wav",
+    "mixed_membo_62-membo_001_.wav",
+    "mixed_membo_9-membo_001_.wav"
+  ],
+
+  "borderline_samples": [
+    "mixed_20-bebop_003_.wav",
+    "mixed_15-bebop_003_.wav",
+    "mixed_membo_10-membo_003_.wav",
+    "mixed_membo_24-membo_003_.wav",
+    "mixed_50-bebop_000_.wav",
+    "mixed_membo_5-membo_000_.wav"
+  ],
+
+  "false_sound_samples": [
+    "dog.wav",
+    "fan_noise.wav",
+    "helicopter.wav",
+    "wind.wav"
+  ]
+}

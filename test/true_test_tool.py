@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import numpy as np
 import tensorflow as tf
 import librosa
@@ -5,12 +8,15 @@ from pathlib import Path
 
 SAMPLE_RATE = 16000
 FRAME_LEN = 4096
+MEL_FILTERBANK = np.load("mel_filterbank_40x129.npy")
 
-mel_filterbank = np.load("mel_filterbank_40x129.npy")
+MODEL_PATH = Path("models/binary/model_binary_int8.tflite")
+TRUE_TEST_DIR = Path("data/train/true_test")
 
-# -----------------------------
-# Feature Extraction
-# -----------------------------
+
+# ---------------------------------------------------------
+# Feature Extraction (STM32-kompatibel)
+# ---------------------------------------------------------
 def extract_features(path):
     y, sr = librosa.load(path, sr=SAMPLE_RATE)
 
@@ -29,39 +35,89 @@ def extract_features(path):
     )
 
     mag = np.abs(S)[:129, :]
-    mel = mel_filterbank @ mag
+    mel = MEL_FILTERBANK @ mag
     mel = np.log10(mel + 1e-6)
 
     return mel.mean(axis=1).astype(np.float32)
 
-# -----------------------------
-# Load TFLite Model
-# -----------------------------
-interpreter = tf.lite.Interpreter(model_path="model_binary_int8.tflite")
-interpreter.allocate_tensors()
 
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
+# ---------------------------------------------------------
+# Load INT8 TFLite Model
+# ---------------------------------------------------------
+def load_model():
+    interpreter = tf.lite.Interpreter(model_path=str(MODEL_PATH))
+    interpreter.allocate_tensors()
+    return interpreter
 
-def run_model(x):
-    x = x.reshape(1, 40).astype(np.float32)
-    interpreter.set_tensor(input_details[0]['index'], x)
+
+# ---------------------------------------------------------
+# INT8 Prediction
+# ---------------------------------------------------------
+def run_model(interpreter, x_float):
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    # Quantisierung
+    scale, zero = input_details[0]['quantization']
+    x_q = x_float / scale + zero
+    x_q = np.clip(x_q, -128, 127).astype(np.int8)
+
+    interpreter.set_tensor(input_details[0]['index'], [x_q])
     interpreter.invoke()
-    out = interpreter.get_tensor(output_details[0]['index'])
-    return float(out[0])
 
-# -----------------------------
-# True-Test
-# -----------------------------
-TRUE_DIR = Path("test/true_test")
+    out_q = interpreter.get_tensor(output_details[0]['index'])[0][0]
 
-files = list(TRUE_DIR.glob("*.wav"))
-print("Gefundene True-Test WAV-Dateien:", len(files))
-print("Starte True-Test Analyse...\n")
+    # Dequantisierung
+    scale_o, zero_o = output_details[0]['quantization']
+    score = (out_q - zero_o) * scale_o
 
-for p in files:
-    print(f"=== TRUE-SOUND: {p.name} ===")
-    feat = extract_features(p)
-    score = run_model(feat)
-    label = "DRONE" if score >= 0.5 else "NO DRONE"
-    print(f"True-Test -> {score:.3f}  ({label})\n")
+    return float(score)
+
+
+# ---------------------------------------------------------
+# Main TRUE-TEST
+# ---------------------------------------------------------
+def run_true_test():
+    interpreter = load_model()
+
+    wavs = sorted(TRUE_TEST_DIR.glob("*.wav"))
+    print(f"Gefundene True-Test WAV-Dateien: {len(wavs)}")
+    print("Starte True-Test Analyse...\n")
+
+    scores = []
+    false_negatives = 0
+
+    for wav in wavs:
+        feat = extract_features(wav)
+        score = run_model(interpreter, feat)
+
+        scores.append(score)
+
+        label = "DRONE" if score >= 0.5 else "NO DRONE"
+        if score < 0.5:
+            false_negatives += 1
+
+        print(f"=== TRUE-SOUND: {wav.name} ===")
+        print(f"True-Test -> {score:.3f}  ({label})\n")
+
+    # ---------------------------------------------------------
+    # Statistik
+    # ---------------------------------------------------------
+    scores = np.array(scores)
+    total = len(scores)
+    fn_rate = false_negatives / total if total > 0 else 0
+
+    print("\n====================================")
+    print("           TRUE-TEST Statistik       ")
+    print("====================================")
+    print(f"Anzahl Dateien:           {total}")
+    print(f"False Negatives:          {false_negatives}")
+    print(f"False-Negative-Rate:      {fn_rate:.3f}")
+    print(f"Score Durchschnitt:       {scores.mean():.3f}")
+    print(f"Score Minimum:            {scores.min():.3f}")
+    print(f"Score Maximum:            {scores.max():.3f}")
+    print("====================================\n")
+
+
+if __name__ == "__main__":
+    run_true_test()

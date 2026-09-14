@@ -1,5 +1,4 @@
 import numpy as np
-import soundfile as sf
 import librosa
 from pathlib import Path
 import tensorflow as tf
@@ -12,14 +11,19 @@ FRAME_LEN = 4096
 MEL_FILTERBANK = np.load("mel_filterbank_40x129.npy")
 
 TFLITE_MODEL = Path("models/binary/model_binary_int8.tflite")
-FALSE_DIR = Path("test/true_test")
+
+TRUE_DIR = Path("test/true_test")        # echte Drohnen-Samples
+TRAIN_TRUE_DIR = Path("data/train/drone")  # Trainings-Drohnen
+
+HARD_THRESHOLD = 0.75
+NO_DRONE_THRESHOLD = 0.50
 
 
 # ---------------------------------------------------------
 # Feature Extraction (STM32-kompatibel)
 # ---------------------------------------------------------
-def extract_features(path):
-    y, sr = librosa.load(path, sr=SAMPLE_RATE)
+def extract_features(path: Path) -> np.ndarray:
+    y, sr = librosa.load(path, sr=SAMPLE_RATE, mono=True)
 
     if len(y) < FRAME_LEN:
         y = np.pad(y, (0, FRAME_LEN - len(y)))
@@ -43,14 +47,18 @@ def extract_features(path):
 
 
 # ---------------------------------------------------------
-# INT8 Quantisierung
+# INT8 Quantisierung / Dequantisierung
 # ---------------------------------------------------------
 def quantize(feat, scale, zero_point):
     return (feat / scale + zero_point).astype(np.int8)
 
 
+def dequantize(value, scale, zero_point):
+    return (value.astype(np.float32) - zero_point) * scale
+
+
 # ---------------------------------------------------------
-# Load TFLite Model
+# Load INT8 TFLite Model
 # ---------------------------------------------------------
 def load_interpreter():
     interpreter = tf.lite.Interpreter(model_path=str(TFLITE_MODEL))
@@ -60,57 +68,80 @@ def load_interpreter():
     output_details = interpreter.get_output_details()
 
     print("[OK] INT8 TFLite Modell geladen")
-    print("Input:", input_details)
-    print("Output:", output_details)
-
     return interpreter, input_details, output_details
 
 
 # ---------------------------------------------------------
-# Inference (INT8)
+# Inference (INT8 → float Score)
 # ---------------------------------------------------------
-def infer_binary(interpreter, input_details, output_details, feat):
-    scale, zero_point = input_details[0]['quantization']
+def infer_score(interpreter, input_details, output_details, feat):
+    in_scale, in_zero = input_details[0]['quantization']
+    qfeat = quantize(feat, in_scale, in_zero)
 
-    qfeat = quantize(feat, scale, zero_point)
     interpreter.set_tensor(input_details[0]['index'], qfeat.reshape(1, -1))
-
     interpreter.invoke()
 
-    out = interpreter.get_tensor(output_details[0]['index'])[0][0]
-
-    # Output ist INT8 → zurück in float konvertieren
+    out_raw = interpreter.get_tensor(output_details[0]['index'])[0][0]
     out_scale, out_zero = output_details[0]['quantization']
-    score = (out - out_zero) * out_scale
 
+    score = (out_raw - out_zero) * out_scale
     return float(score)
 
 
 # ---------------------------------------------------------
-# Main False-Test
+# TRUE-TEST PIPELINE
 # ---------------------------------------------------------
-def run_false_test():
+def collect_true_samples():
+    files = []
+
+    if TRAIN_TRUE_DIR.exists():
+        files += sorted(TRAIN_TRUE_DIR.glob("*.wav"))
+
+    if TRUE_DIR.exists():
+        files += sorted(TRUE_DIR.glob("*.wav"))
+
+    return sorted(set(files))
+
+
+def run_true_test():
     interpreter, input_details, output_details = load_interpreter()
+    files = collect_true_samples()
 
-    print("\n=== FALSE-TEST START ===")
+    print("\n==============================================")
+    print(" TRUE-TEST-FIX-PIPELINE (utils)")
+    print(" Samples:", len(files))
+    print("==============================================\n")
 
-    for wav in sorted(FALSE_DIR.glob("*.wav")):
-        feat = extract_features(wav)
-        score = infer_binary(interpreter, input_details, output_details, feat)
+    hard_samples = []
+    no_drone_errors = []
 
-        label = "DRONE" if score >= 0.5 else "NO DRONE"
-        print(f"{wav.name:40s}  Score={score:.3f}  → {label}")
+    for f in files:
+        feat = extract_features(f)
+        score = infer_score(interpreter, input_details, output_details, feat)
 
-    print("\n=== ZERO-INPUT TEST ===")
-    zero = np.zeros(40, dtype=np.float32)
-    score = infer_binary(interpreter, input_details, output_details, zero)
-    print(f"Zero-Input Score={score:.3f}")
+        label = "DRONE" if score >= NO_DRONE_THRESHOLD else "NO DRONE"
 
-    print("\n=== FALSE-TEST DONE ===")
+        print(f"=== TRUE-SOUND: {f.name} ===")
+        print(f"True-Test -> {score:.3f}  ({label})\n")
+
+        if score < HARD_THRESHOLD:
+            hard_samples.append((f, score))
+
+        if label == "NO DRONE":
+            no_drone_errors.append((f, score))
+
+    print("\n----------------------------------------------")
+    print(" SUMMARY")
+    print("----------------------------------------------")
+    print("Harte Samples (<0.75):", len(hard_samples))
+    print("NO-DRONE Fehler (<0.50):", len(no_drone_errors))
+    print("----------------------------------------------\n")
+
+    return hard_samples, no_drone_errors
 
 
 # ---------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    run_false_test()
+    run_true_test()
