@@ -2,6 +2,7 @@
 *.WAV
 *.mp3
 *.flac
+obsolete/
 data/
 database/
 DroneAudioDataset-master/

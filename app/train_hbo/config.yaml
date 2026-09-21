@@ -1,0 +1,19 @@
+audio:
+  sr: 48000
+  n_fft: 2048
+  hop_length: 512
+  n_harmonics: 6
+
+paths:
+  drone_train: "./data/train_48k/drone_real_train"
+  drone_test: "./data/train_48k/drone_real_test"
+  no_drone_train: "./data/train_48k/no_drone_train"
+  no_drone_test: "./data/train_48k/no_drone_test"
+  sim_drone_test: "./data/train_48k/drone_sim_test"
+
+
+training:
+  batch_size: 32
+  epochs: 40
+  learning_rate: 0.0005
+  model_type: "mlp"
