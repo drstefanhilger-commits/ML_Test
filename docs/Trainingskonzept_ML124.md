@@ -111,6 +111,10 @@ Vorhandene Bestände (laut `bpp_train.py`, V8-Berichten): `data/train_48k/…`, 
 2000 Nicht-Drohnen-Dateien – Umfang, Mikrofone, Längen und Herkunft sind vor Verwendung zu
 inventarisieren (Abschnitt 9).
 
+> **⚠ PRÜFEN:** Die Verwendung der Drohnendaten (synthetisch und echt) im Training ist noch nicht
+> freigegeben und muss vorher überprüft werden – Prüfpunkte in `docs/Daten_ML124.md` (Hinweis am
+> Anfang). Status: offen.
+
 ### 5.3 Datentrennung und Kontrollen
 - Aufteilung **nach Aufnahme** (nie Ausschnitte derselben Aufnahme in Training und Test) und
   zusätzlich ein **Hold-out nach Drohnentyp** und nach Aufnahmeort.
