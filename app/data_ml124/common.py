@@ -25,7 +25,29 @@ def write_meta(path, rows):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
-AUDIO_ML = os.path.abspath(os.path.join(ROOT, "..", "audio_ml", "datasets"))
+
+
+def _find_audio_ml():
+    """Quelldatensätze (ESC-50, Drone-detection-dataset): Umgebungsvariable SDS_AUDIO_ML, sonst
+    ../audio_ml/datasets neben dem Repository, sonst ../../Copilot_Projekt/audio_ml/datasets."""
+    cands = [os.environ.get("SDS_AUDIO_ML", ""),
+             os.path.join(ROOT, "..", "audio_ml", "datasets"),
+             os.path.join(ROOT, "..", "..", "Copilot_Projekt", "audio_ml", "datasets")]
+    for c in cands:
+        if c and os.path.isdir(os.path.join(c, "esc50")):
+            return os.path.abspath(c)
+    raise FileNotFoundError("Quelldatensätze nicht gefunden – SDS_AUDIO_ML auf den Ordner mit "
+                            "esc50/ und Drone-detection-dataset/ setzen. Gesucht: " + ", ".join(c for c in cands if c))
+
+
+AUDIO_ML = None                 # wird beim ersten Zugriff über audio_ml() aufgelöst
+
+
+def audio_ml():
+    global AUDIO_ML
+    if AUDIO_ML is None:
+        AUDIO_ML = _find_audio_ml()
+    return AUDIO_ML
 
 
 def to_48k_mono(path, channel=0):

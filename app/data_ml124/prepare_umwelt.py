@@ -13,13 +13,13 @@ Aufruf (im Repo-Wurzelverzeichnis):  python app/data_ml124/prepare_umwelt.py
 """
 import csv, os, sys
 sys.path.insert(0, os.path.dirname(__file__))
-from common import AUDIO_ML, DATA48, split_of, to_48k_mono, write_meta, write_wav
+from common import audio_ml, DATA48, split_of, to_48k_mono, write_meta, write_wav
 
-ESC = os.path.join(AUDIO_ML, "esc50", "ESC-50-master")
-DDS = os.path.join(AUDIO_ML, "Drone-detection-dataset", "Data", "Audio")
 
 
 def main():
+    ESC = os.path.join(audio_ml(), "esc50", "ESC-50-master")
+    DDS = os.path.join(audio_ml(), "Drone-detection-dataset", "Data", "Audio")
     rows = []
     with open(os.path.join(ESC, "meta", "esc50.csv")) as f:
         esc = list(csv.DictReader(f))

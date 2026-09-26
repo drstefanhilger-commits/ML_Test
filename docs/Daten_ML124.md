@@ -80,6 +80,10 @@ Hinweise zu den Klassen:
 
 Im Repository-Wurzelverzeichnis, Python mit numpy, scipy, soundfile (z. B. `~/ml_env`):
 
+Die Quelldatensätze (`esc50/`, `Drone-detection-dataset/`) werden in dieser Reihenfolge gesucht:
+Umgebungsvariable `SDS_AUDIO_ML`, `../audio_ml/datasets` neben dem Repository,
+`../../Copilot_Projekt/audio_ml/datasets`. Arbeitskopie mit den Daten: `Claude_Projekt/ML_Test`.
+
 ```bash
 python app/data_ml124/prepare_umwelt.py          # Umwelt (≈ 35 s)
 python app/data_ml124/prepare_dronen_real.py     # Dronen/real_dds

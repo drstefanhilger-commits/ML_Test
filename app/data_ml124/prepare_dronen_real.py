@@ -11,12 +11,12 @@ Aufruf (im Repo-Wurzelverzeichnis):  python app/data_ml124/prepare_dronen_real.p
 """
 import csv, os, sys
 sys.path.insert(0, os.path.dirname(__file__))
-from common import AUDIO_ML, DATA48, split_of, to_48k_mono, write_meta, write_wav
+from common import audio_ml, DATA48, split_of, to_48k_mono, write_meta, write_wav
 
-DDS = os.path.join(AUDIO_ML, "Drone-detection-dataset", "Data", "Audio")
 
 
 def main():
+    DDS = os.path.join(audio_ml(), "Drone-detection-dataset", "Data", "Audio")
     rows = []
     for f in sorted(f for f in os.listdir(DDS) if f.startswith("DRONE_") and f.endswith(".wav")):
         n = int(f.split("_")[1].split(".")[0])
