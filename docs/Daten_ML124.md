@@ -1,11 +1,12 @@
 # Daten für das Training von Modul 124
 
 Stand 26.09.2026. Zugehörig: `docs/Trainingskonzept_ML124.md` (Abschnitt 5).
-Die Audiodaten liegen unter `data/` und sind **nicht** im Repository (`.gitignore`); sie werden
-mit den Skripten in `app/data_ml124/` reproduzierbar erzeugt.
+Die Audiodaten liegen unter `data/48kHz/` und sind **nicht** im Repository (`.gitignore`); sie
+werden mit den Skripten in `app/data_ml124/` reproduzierbar erzeugt. Die vollständige Liste der
+Trainings- und Testdaten steht in `docs/Datenliste_ML124.md` (und `.csv`).
 
 > **⚠ PRÜFEN – Verwendung der Drohnendaten im Training**
-> Die Verwendung der Drohnendaten (`data/Dronen/sim` und `data/Dronen/real_dds`) im Training ist
+> Die Verwendung der Drohnendaten (`Dronen/sim` und `Dronen/real_dds` unter `data/48kHz/`) im Training ist
 > **noch nicht freigegeben** und muss vor dem Training überprüft werden, insbesondere:
 > 1. Realitätsnähe des synthetischen Modells (bisher nur Spektralverteilung gegen 30 DDS-Aufnahmen
 >    verglichen; Modulation, Drehzahldynamik, Drohnentypen und -größen nicht belegt).
@@ -19,23 +20,37 @@ mit den Skripten in `app/data_ml124/` reproduzierbar erzeugt.
 
 ## 1. Übersicht
 
-| Ordner | Inhalt | Anzahl | Größe | Lizenz |
+Ablage: `data/48kHz/{train,test}/{Dronen,Umwelt}/<Teilmenge>/…`
+
+| Teilmenge | Inhalt | Training | Test | Lizenz |
 |---|---|---|---|---|
-| `data/Dronen/sim/` | synthetische, saubere Mehrrotor-Drohnen (ohne Umgebungsgeräusch) + JSON je Clip | 300 × 10 s | 420 MB | eigene Erzeugung |
-| `data/Dronen/real_dds/` | echte Drohnenaufnahmen (Drone-detection-dataset) | 30 × 10 s | 28 MB | CC0 1.0 |
-| `data/Umwelt/esc50/<Kategorie>/` | ESC-50, 50 Klassen Umweltgeräusche | 2000 × 5 s | ~920 MB | **CC BY-NC 3.0** |
-| `data/Umwelt/dds/background/`, `dds/helicopter/` | Hintergrund und Hubschrauber (Drone-detection-dataset) | 30 + 30 × 10 s | ~55 MB | CC0 1.0 |
+| `Dronen/sim/` | synthetische, saubere Mehrrotor-Drohnen (ohne Umgebungsgeräusch) + JSON je Clip, 10 s | 240 | 60 | eigene Erzeugung |
+| `Dronen/real_dds/` | echte Drohnenaufnahmen (Drone-detection-dataset), 10 s | – | 30 | CC0 1.0 |
+| `Umwelt/esc50/<Kategorie>/` | ESC-50, 50 Klassen Umweltgeräusche, 5 s | 1598 | 402 | **CC BY-NC 3.0** |
+| `Umwelt/dds/background/`, `dds/helicopter/` | Hintergrund und Hubschrauber (Drone-detection-dataset), 10 s | 48 | 12 | CC0 1.0 |
+| **gesamt** | | **1886 (181 min)** | **504 (51 min)** | |
 
-Einheitliches Format: 48 kHz, mono (Stereo gemittelt), WAV. Umwelt und `real_dds` PCM_16,
-`sim` PCM_24.
+Format: 48 kHz, mono, WAV (Umwelt und `real_dds` PCM_16, `sim` PCM_24), zusammen 1,4 GB.
+Stereo-Aufnahmen (DDS) werden auf **Kanal 0** reduziert, nicht gemittelt: Das Board wertet ein
+Referenzmikrofon aus; Mitteln zweier Mikrofone senkt diffusen Hintergrund um 1–2 dB (stärker bei
+hohen Frequenzen) und wirkt als Kammfilter (gemessen: Korrelation der DDS-Kanäle bei Hintergrund
+im Median 0,44, bei Drohnen 0,86; 16 der 90 Dateien sind Doppel-Mono).
 
-Metadaten: `data/Umwelt/meta.csv`, `data/Dronen/meta_real.csv`, `data/Dronen/meta_sim.csv`
-(Spalten u. a. `file`, `source`, `category`, `fold`, `license`) sowie `sim/*.json`.
+Metadaten in `data/48kHz/`: `meta_umwelt.csv`, `meta_dronen_real.csv`, `meta_dronen_sim.csv` und
+die zusammengeführte `datenliste.csv` (Spalten `split`, `group`, `subset`, `category`, `file`,
+`fold`, `duration_s`, `source`, `license`) sowie `sim/*.json`.
 
-**Folds (Datentrennung)**: Jede Datei hat einen Fold 1–5. ESC-50 bringt eigene Folds mit (Clips
-derselben Originalaufnahme im selben Fold). DDS: Fold = (laufende Nummer − 1) % 5 + 1 – der
-Aufnahmezusammenhang ist unbekannt, daher für die Endbewertung zusätzlich nach Quelle trennen.
-`sim`: Fold = Index % 5 + 1 (jeder Clip ist eine unabhängige Drohne).
+**Aufteilung Training/Test** (`split_of()` in `common.py`): Test = Fold 5 (20 %), Training =
+Folds 1–4 (Folds für Kreuzvalidierung erhalten).
+- ESC-50: Folds aus dem Datensatz, aufgeteilt nach Originalaufnahme (`src_file`). Laut Datensatz
+  liegen Clips derselben Aufnahme im selben Fold; 4 Aufnahmen verletzen das, 2 davon über die
+  Grenze Training/Test – deren Clips liegen jetzt alle im Test.
+- DDS: Fold = (laufende Nummer − 1) % 5 + 1 – der Aufnahmezusammenhang ist unbekannt, daher für
+  die Endbewertung zusätzlich nach Quelle trennen.
+- `sim`: Fold = Index % 5 + 1 (jeder Clip ist eine unabhängige Drohne).
+- `real_dds`: vollständig im Test (Validierung der Übertragbarkeit nur an echten Drohnen;
+  Rolle noch offen, siehe PRÜFEN-Punkt 4).
+- Beim Mischen (Drohne + Umwelt) nur Dateien desselben Splits kombinieren.
 
 ---
 
@@ -66,14 +81,15 @@ Hinweise zu den Klassen:
 Im Repository-Wurzelverzeichnis, Python mit numpy, scipy, soundfile (z. B. `~/ml_env`):
 
 ```bash
-python app/data_ml124/prepare_umwelt.py          # data/Umwelt (≈ 35 s)
-python app/data_ml124/prepare_dronen_real.py     # data/Dronen/real_dds
-python app/data_ml124/gen_dronen_sim.py --n 300  # data/Dronen/sim (≈ 2 min mit 16 Prozessen)
+python app/data_ml124/prepare_umwelt.py          # Umwelt (≈ 35 s)
+python app/data_ml124/prepare_dronen_real.py     # Dronen/real_dds
+python app/data_ml124/gen_dronen_sim.py --n 300  # Dronen/sim (≈ 2 min mit 16 Prozessen)
+python app/data_ml124/make_liste.py              # datenliste.csv, docs/Datenliste_ML124.{md,csv}
 ```
 
 Die Umtastung 44,1 → 48 kHz erfolgt polyphas (`resample_poly`, 160/147). Wo sie über
 Vollaussteuerung schwingt, wird die Datei minimal herunterskaliert; der Faktor steht in `gain`
-(betrifft 562 ESC-50-Clips). `gen_dronen_sim.py` ist bitgenau reproduzierbar (geprüft: Clips 0 und
+(betrifft 559 ESC-50- und 4 DDS-Dateien). `gen_dronen_sim.py` ist bitgenau reproduzierbar (geprüft: Clips 0 und
 177 erneut erzeugt, SHA-256 identisch).
 
 ---

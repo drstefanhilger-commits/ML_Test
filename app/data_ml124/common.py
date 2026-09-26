@@ -8,13 +8,31 @@ from scipy.signal import resample_poly
 SR = 48000                      # Zielrate aller Daten (Board: 47 991 Hz, Abweichung 186 ppm vernachlässigbar)
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DATA = os.path.join(ROOT, "data")
+DATA48 = os.path.join(DATA, "48kHz")          # Trainings- und Testdaten, 48 kHz mono
+TEST_FOLD = 5                                  # Test = Fold 5 (20 %), Training = Folds 1–4
+
+
+def split_of(fold, kind=""):
+    """Aufteilung Training/Test. Echte Drohnen (kind == "real") nur im Test: Übertragbarkeit auf
+    echte Drohnen wird ausschließlich an echten Aufnahmen validiert (Trainingskonzept, PRÜFEN-Punkt 2)."""
+    if kind == "real":
+        return "test"
+    return "test" if int(fold) == TEST_FOLD else "train"
+
+
+def write_meta(path, rows):
+    import csv
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
 AUDIO_ML = os.path.abspath(os.path.join(ROOT, "..", "audio_ml", "datasets"))
 
 
-def to_48k_mono(path):
-    """WAV lesen, Kanäle mitteln, auf 48 kHz umtasten (polyphas, Kaiser-Fenster)."""
+def to_48k_mono(path, channel=0):
+    """WAV lesen, **einen** Kanal nehmen (Board: ein Referenzmikrofon; Mitteln zweier Mikrofone
+    würde diffusen Schall um 1–2 dB absenken und kammfiltern), auf 48 kHz umtasten (polyphas)."""
     x, sr = sf.read(path, always_2d=True, dtype="float64")
-    x = x.mean(axis=1)
+    x = x[:, min(channel, x.shape[1] - 1)]
     if sr != SR:
         g = gcd(SR, sr)
         x = resample_poly(x, SR // g, sr // g)

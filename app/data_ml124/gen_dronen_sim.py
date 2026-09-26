@@ -1,5 +1,5 @@
 """
-data/Dronen/sim: synthetische, **saubere** Mehrrotor-Drohnensignale (ohne Umgebungsgeräusch) für
+Dronen/sim: synthetische, **saubere** Mehrrotor-Drohnensignale (ohne Umgebungsgeräusch) für
 das Training von Modul 124 (docs/Trainingskonzept_ML124.md, Abschnitt 5). Das Störgeräusch wird
 erst beim Mischen hinzugefügt; so lässt sich der Band-SNR der UAV-Komponente exakt berechnen.
 
@@ -20,8 +20,9 @@ Modell je Clip (alle Zufallswerte aus einem festen Seed -> reproduzierbar):
 ⚠ PRÜFEN: Die Verwendung dieser Daten im Training ist noch nicht freigegeben und muss vorher
 überprüft werden (Prüfpunkte: docs/Daten_ML124.md, Hinweis am Anfang).
 
-Ausgabe: sim/drone_sim_XXXX.wav (48 kHz, mono, PCM_24), sim/drone_sim_XXXX.json (Parameter,
-Drehzahlverläufe je Rotor mit 50 Hz), meta_sim.csv.
+Ausgabe: data/48kHz/{train,test}/Dronen/sim/drone_sim_XXXX.wav (48 kHz, mono, PCM_24) und .json
+(Parameter, Drehzahlverläufe je Rotor mit 50 Hz); Fold = Index % 5 + 1, Test = Fold 5;
+Liste data/48kHz/meta_dronen_sim.csv.
 
 Aufruf (im Repo-Wurzelverzeichnis):
   python app/data_ml124/gen_dronen_sim.py [--n 300] [--seed 20260926] [--dur 10] [--jobs 8]
@@ -33,9 +34,8 @@ from scipy.signal import butter, sosfilt
 import soundfile as sf
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import DATA, SR
+from common import DATA48, SR, split_of, write_meta
 
-OUT = os.path.join(DATA, "Dronen")
 C = 343.0                     # Schallgeschwindigkeit m/s
 F_MAX = 8000.0                # höchste erzeugte Teiltonfrequenz
 RMS_DBFS = -26.0
@@ -142,17 +142,24 @@ def synth(idx, seed, dur):
         y *= 0.99 / peak
 
     name = f"drone_sim_{idx:04d}"
-    sf.write(os.path.join(OUT, "sim", name + ".wav"), y, SR, subtype="PCM_24")
-    meta = dict(file=f"sim/{name}.wav", seed=int(seed), duration_s=dur, rms_dbfs=RMS_DBFS,
+    fold = idx % 5 + 1; sp = split_of(fold)
+    rel = os.path.join(sp, "Dronen", "sim", name)
+    os.makedirs(os.path.dirname(os.path.join(OUT_ROOT, rel)), exist_ok=True)
+    sf.write(os.path.join(OUT_ROOT, rel + ".wav"), y, SR, subtype="PCM_24")
+    meta = dict(file=rel + ".wav", seed=int(seed), duration_s=dur, rms_dbfs=RMS_DBFS,
                 peak_dbfs=round(20 * np.log10(np.max(np.abs(y))), 2), refl_delay_ms=round(tau * 1e3, 3),
                 params=p, track_rate_hz=50,
                 rotor_rps=[[round(float(v), 3) for v in tr] for tr in tracks])
-    with open(os.path.join(OUT, "sim", name + ".json"), "w") as fh:
+    with open(os.path.join(OUT_ROOT, rel + ".json"), "w") as fh:
         json.dump(meta, fh)
-    return dict(file=meta["file"], seed=seed, fold=idx % 5 + 1, n_rotors=p["n_rotors"], n_blades=p["n_blades"],
+    return dict(file=meta["file"], split=sp, group="Dronen", subset="sim", source="synthetisch", category="drone_sim",
+                fold=fold, duration_s=dur, seed=seed, n_rotors=p["n_rotors"], n_blades=p["n_blades"],
                 f_bpf0_hz=round(p["f_bpf0_hz"], 2), distance_m=round(p["distance_m"], 1),
                 height_m=round(p["height_m"], 1), broadband_db=round(p["broadband_db"], 1),
                 peak_dbfs=meta["peak_dbfs"], license="eigene Erzeugung")
+
+
+OUT_ROOT = DATA48
 
 
 def _job(a):
@@ -166,12 +173,10 @@ def main():
     ap.add_argument("--dur", type=float, default=10.0)
     ap.add_argument("--jobs", type=int, default=os.cpu_count())
     a = ap.parse_args()
-    os.makedirs(os.path.join(OUT, "sim"), exist_ok=True)
     with Pool(a.jobs) as pool:
         rows = pool.map(_job, [(i, a.seed + i, a.dur) for i in range(a.n)])
-    with open(os.path.join(OUT, "meta_sim.csv"), "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
-    print(f"{len(rows)} Clips nach {OUT}/sim")
+    write_meta(os.path.join(OUT_ROOT, "meta_dronen_sim.csv"), rows)
+    print(f"{len(rows)} Clips nach {OUT_ROOT}/{{train,test}}/Dronen/sim")
 
 
 if __name__ == "__main__":
