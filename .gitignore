@@ -6,3 +6,7 @@ obsolete/
 data/
 database/
 DroneAudioDataset-master/
+
+# Python-Bytecode (wird bei jedem Lauf neu erzeugt)
+__pycache__/
+*.pyc
