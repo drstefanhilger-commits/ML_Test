@@ -185,8 +185,8 @@ selbst, dass eine Nachrechnung des Headers in NumPy die Python-Ausgaben reproduz
 |---|---|---|---|---|
 | 1 | Merkmalswerkzeug mit Versionshash | SDS_110 `tools/features` | CLI `WAV → .npy/.json` | **erledigt** 26.09.2026 (SDS_110 `b9cfff0`, `doc/Merkmalswerkzeug.md`; Merkmalsversion `837ff89cbda34b21`) |
 | 2 | Inventur vorhandener Daten (Anzahl, Längen, Pegel, Geräte, Drohnentypen) | ML_Test | Datensatz-Übersicht | teilweise: Daten aufbereitet und gelistet (`docs/Daten_ML124.md`, `docs/Datenliste_ML124.md`); Inventur echter Drohnen (Typen, Geräte, Pegel) offen |
-| 3 | Label-Erzeugung (Simulator, Mischung) | ML_Test `app/train_ml124` | Merkmale + Bandziele | **erledigt** 26.09.2026 (`docs/Datensatz_ML124.md`; 1500 Beispiele, Label-Modus von `sds_features`; ⚠ PRÜFEN gilt weiter) |
-| 4 | Training + Auswertung (AUC/F1 je Band, Hold-out) | ML_Test | Modell, Bericht | offen |
+| 3 | Label-Erzeugung (Simulator, Mischung) | ML_Test `app/train_ml124` | Merkmale + Bandziele | **erledigt** 26.09.2026 (ML_Test `0165ede`, SDS_110 `58b3b0f`, `docs/Datensatz_ML124.md`; 1500 Beispiele, Label-Modus von `sds_features`; ⚠ PRÜFEN gilt weiter) |
+| 4 | Training + Auswertung (AUC/F1 je Band, Hold-out) | ML_Test | Modell, Bericht | **erledigt** 26.09.2026 (`docs/Training_ML124.md`; Modell `model/ml124/k5_h48_d3`, AUC 0,90 / F1 0,87 auf Gemischen; echte Drohnen schwächer; ⚠ PRÜFEN gilt weiter) |
 | 5 | Export mit Referenzvektoren | ML_Test | Header für SDS_110 | offen |
 | 6 | Inferenz in 124, Umschalter, `t_ml124` | SDS_110 | Firmware + Host-Test | offen |
 | 7 | Vergleich HBD ↔ ML mit den Host-Messungen | SDS_110 | Bericht, Entscheidung | offen |

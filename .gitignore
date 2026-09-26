@@ -10,3 +10,9 @@ DroneAudioDataset-master/
 # Python-Bytecode (wird bei jedem Lauf neu erzeugt)
 __pycache__/
 *.pyc
+
+# ML124: Gewichte nur des ausgewählten Modells versionieren (docs/Training_ML124.md)
+model/ml124/*/model.keras
+model/ml124/*/norm.npz
+!model/ml124/k5_h48_d3/model.keras
+!model/ml124/k5_h48_d3/norm.npz
