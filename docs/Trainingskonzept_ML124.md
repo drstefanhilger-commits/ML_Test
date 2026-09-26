@@ -121,6 +121,7 @@ inventarisieren (Abschnitt 9).
 - Je Klasse prüfen: Längen, Pegel, Aufnahmegerät, Abtastrate – keine Klasse darf an solchen
   Nebenmerkmalen erkennbar sein.
 - Anteil positiver Bänder protokollieren (erwartet klein) und im Verlust gewichten.
+  Stand AP3: ca. 50 % positiv, abhängig vom Misch-SNR (`docs/Datensatz_ML124.md`, Abschnitt 4).
 
 ---
 
@@ -184,7 +185,7 @@ selbst, dass eine Nachrechnung des Headers in NumPy die Python-Ausgaben reproduz
 |---|---|---|---|---|
 | 1 | Merkmalswerkzeug mit Versionshash | SDS_110 `tools/features` | CLI `WAV → .npy/.json` | **erledigt** 26.09.2026 (SDS_110 `b9cfff0`, `doc/Merkmalswerkzeug.md`; Merkmalsversion `837ff89cbda34b21`) |
 | 2 | Inventur vorhandener Daten (Anzahl, Längen, Pegel, Geräte, Drohnentypen) | ML_Test | Datensatz-Übersicht | teilweise: Daten aufbereitet und gelistet (`docs/Daten_ML124.md`, `docs/Datenliste_ML124.md`); Inventur echter Drohnen (Typen, Geräte, Pegel) offen |
-| 3 | Label-Erzeugung (Simulator, Mischung) | ML_Test `app/train_ml124` | Merkmale + Bandziele | offen |
+| 3 | Label-Erzeugung (Simulator, Mischung) | ML_Test `app/train_ml124` | Merkmale + Bandziele | **erledigt** 26.09.2026 (`docs/Datensatz_ML124.md`; 1500 Beispiele, Label-Modus von `sds_features`; ⚠ PRÜFEN gilt weiter) |
 | 4 | Training + Auswertung (AUC/F1 je Band, Hold-out) | ML_Test | Modell, Bericht | offen |
 | 5 | Export mit Referenzvektoren | ML_Test | Header für SDS_110 | offen |
 | 6 | Inferenz in 124, Umschalter, `t_ml124` | SDS_110 | Firmware + Host-Test | offen |
