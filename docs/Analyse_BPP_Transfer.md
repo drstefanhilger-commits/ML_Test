@@ -2,7 +2,8 @@
 
 Stand 26.09.2026, Repository-Stand `f15c676` („Start der SDS Integration“).
 Untersucht: `app/train_bpp` (Training), `app/sds/transfere` (Code für das Board),
-`models/bpp` (Modell); zum Vergleich `app/train_hbo`, `app/sds_transfere`, `docs/`.
+`models/bpp` (Modell); zum Vergleich `app/train_hbo`, `app/sds_transfere` und die V8-Berichte (damals `docs/`, seit
+Commit `bc72b11` unter `obsolet/doc/`).
 Alle Befunde wurden nachgerechnet (Abschnitt 5 enthält die Prüfskripte).
 
 ---
@@ -161,7 +162,7 @@ AGC nach Bandpass 80–8000 Hz – andere Voraussetzungen als `n_fft = 2048`, Ba
 Feld mit 1024 Einträgen, Logarithmus auf dem gepackten komplexen Spektrum statt auf Beträgen,
 `const`-Eingabe wird von `arm_rfft_fast_f32` überschrieben. Nicht weiter verwendbar.
 
-### 3.9 Hinweis zu `docs/` (V8)
+### 3.9 Hinweis zu den V8-Berichten (`obsolet/doc/`)
 Die V8-Berichte nennen für 1332 echte Drohnen-Dateien durchgehend Score 1,000 und 0 falsch
 Negative. Solch perfekte Werte sprechen eher für Überschneidungen zwischen Trainings- und Testdaten
 (z. B. Ausschnitte derselben Aufnahme) als für echte Generalisierung – vor einer Weiterverwendung
