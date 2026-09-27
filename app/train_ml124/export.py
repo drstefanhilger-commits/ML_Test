@@ -127,9 +127,9 @@ def main():
     with open(p_data, "w") as fh:
         fh.write(head + "// Modul 124: MLP für s(t) = (p_1 .. p_B), Docs: ML_Test docs/Training_ML124.md\n"
                  "#pragma once\n#include <cstdint>\n\nnamespace sds110::ml124model {\n\n")
-        fh.write(f'constexpr char     FEATURE_VERSION[] = "{cfg["feature_version"]}";\n'
-                 f'constexpr char     MODEL_NAME[]      = "{cfg["name"]}";\n'
-                 f'constexpr char     ML_TEST_GIT[]     = "{cfg["ml_test_git"]}";\n'
+        fh.write(f'constexpr char     MODEL_FEATURE_VERSION[] = "{cfg["feature_version"]}";\n'
+                 f'constexpr char     MODEL_NAME[]            = "{cfg["name"]}";\n'
+                 f'constexpr char     ML_TEST_GIT[]           = "{cfg["ml_test_git"]}";\n'
                  f"constexpr uint32_t NUM_FEATURES = {N_FEAT};   // je Frame: {FEATURE_ORDER}\n"
                  f"constexpr uint32_t CONTEXT      = {K};     // Frames t, t−1, …, t−{K - 1} (neuester zuerst); "
                  f"am Anfang mit dem ersten Frame aufgefüllt\n"
