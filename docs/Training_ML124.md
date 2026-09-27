@@ -167,3 +167,34 @@ Da die Band-Wahrheit fehlt, wird nur die Selektion gezählt.
 4. **Fehlalarme**: Hubschrauber und einzelne ESC-Klassen sind die harten Negativbeispiele. Falls
    AP7 zu viele Fehl-Reports zeigt: θ_sel anheben, weitere Umweltdaten ohne Drohne oder das
    HBD-Gate beibehalten (Konzept Abschnitt 6).
+
+---
+
+## 5. Export für SDS_110 (Arbeitspaket 5)
+
+Stand 27.09.2026. Umsetzung von Konzept Abschnitt 7.
+
+```bash
+# ~/ml_env, Repo-Wurzel; Merkmalswerkzeug unter ../SDS_110/build/tools (oder SDS_FEATURES)
+python app/train_ml124/make_ref_features.py /tmp/ml124_ref          # nur ohne data/48kHz_features
+python app/train_ml124/export.py model/ml124/k5_h48_d3 --ref /tmp/ml124_ref/feat_*.npy
+```
+
+| Datei | Aufgabe |
+|---|---|
+| `app/train_ml124/export.py` | Header schreiben, zurücklesen, in NumPy nachrechnen, mit Keras vergleichen (Exit 1 bei > 1e-5) |
+| `app/train_ml124/make_ref_features.py` | reproduzierbare Merkmalsdateien für die Referenzvektoren, falls der Testsplit nicht vorliegt |
+
+Ausgabe in `model/ml124/<name>/export/`:
+
+| Header | Inhalt | Ziel in SDS_110 |
+|---|---|---|
+| `ML124_Model_Data.hpp` | Merkmalsversion, Modellname, Kontext K, Schichten (`W[n_out][n_in]`, Bias, Aktivierung), Mittelwert/Streuung | `Core/SDS_110/Processing_Module_120/Machine_Learning_Module_124/` |
+| `ML124_Model_Ref.hpp` | 36 Referenzvektoren (Rohmerkmale gestapelt, Keras-Ausgabe), Herkunft je Vektor | `test/host/` (nur Host-Test `t_ml124`) |
+
+Ohne `--ref` nimmt das Skript gleichmäßig verteilte Frames aus dem Testsplit
+(`data/48kHz_features`, ab Frame 31). Die Merkmalsversion der Dateien muss zum Modell passen.
+
+Ergebnis `k5_h48_d3`: 845 → 48 → 64 → 64, 193,7 kB float32 (≤ 200 kB), Referenzvektoren aus
+`make_ref_features.py` (Test-Drohnen 4 und 9 mit 10 dB bzw. 0 dB rosa Rauschen, reines rosa
+Rauschen), max. |NumPy − Keras| = 4,2·10⁻⁷.
